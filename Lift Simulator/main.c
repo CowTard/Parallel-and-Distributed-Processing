@@ -20,14 +20,13 @@
 #define TIME_BETWEEN_FLOORS 1
 
 char* convertEnum(int);
-
+int generateFloor(int, int);
 
 enum ElevatorState {IDLE, UP, DOWN};
 
 typedef struct
 {
-	int intention; // Intention: 0 for DOWN, 1 for UP
-	int desireFloor;
+	int desiredFloor;
 } Person;
 
 typedef struct
@@ -77,8 +76,6 @@ int main(int argc, char** argv)
 			if (lift.floor < lift.desiredFloor) { lift.state = UP; elevator_change = 1; }
 			else { lift.state = DOWN; elevator_change = -1; }
 
-			//printf(" + Elevator is in floor %d and its state is %s.\n", lift.floor, convertEnum(lift.state));
-
 			while(lift.floor != lift.desiredFloor)
 			{
 				sleep(TIME_BETWEEN_FLOORS);
@@ -90,7 +87,6 @@ int main(int argc, char** argv)
 			printf(" + Elevator is in floor %d and it is opening doors.\n", lift.floor);
 		}
 
-
 	}
 	else
 	{
@@ -101,14 +97,23 @@ int main(int argc, char** argv)
 
 		while(1)
 		{
-			if (rand() % 100 < 1)
+			if (rand() % 10000 < 1)
 			{
+
+				Person t1;
+				t1.desiredFloor = generateFloor(fl.floor, number_of_processes);
+
+				fl.number_of_people += 1;
+				fl.people[fl.number_of_people - 1] = t1;
+				printf("A new person was created in floor %d.\n", fl.floor);
+			}
+
+			if (fl.number_of_people > 0){
 				MPI_Send(&fl.floor, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
 			}
 		}
 
 	}
-
 
 	MPI_Finalize();
 	return 0;
@@ -120,4 +125,15 @@ char* convertEnum(int number)
 	if (number == 0) return "IDLE";
 	if (number == 1) return "UP";
 	return "DOWN";
+}
+
+// Generate a desired floor based on current floor
+int generateFloor(int current, int number_of_processes)
+{
+	int desired_floor = rand() % number_of_processes;
+
+	if (current == desired_floor)
+		return generateFloor(current, number_of_processes);
+
+	return  desired_floor;
 }
