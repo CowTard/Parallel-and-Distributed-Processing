@@ -59,7 +59,17 @@ int main(int argc, char** argv)
 			// wait for the elevator to reach a floor
 			int current_floor;
 			MPI_Recv( &current_floor, 1, MPI_INT, 1, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+
 			printf("Elevator is in floor %d\n", current_floor);
+
+			// Destination of this message is current_floor + 2 because the first ranks are the Scheduler and Elevator
+			MPI_Send(&current_floor, 1, MPI_INT, current_floor + 2, 0, MPI_COMM_WORLD);
+
+			int i;
+			MPI_Recv(&i, 1, MPI_INT, current_floor + 2, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+
+			MPI_Send(&i, 1, MPI_INT, 1, 0, MPI_COMM_WORLD);
+
 		}
 	}
 	else if (rank == 1)
@@ -75,6 +85,10 @@ int main(int argc, char** argv)
 
 			MPI_Send(&lift.floor, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
 			// Receive from Scheduler if there is some people who wants to go in the same direction
+			int number_of_people_to_take;
+			MPI_Recv(&number_of_people_to_take, 1, MPI_INT, 0, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+
+			printf("Elevator will take %d people.\n", number_of_people_to_take);
 			break;
 
 		}
@@ -97,8 +111,25 @@ int main(int argc, char** argv)
 				p1.desired_floor = generateFloor(fl.floor, number_of_processes);
 				fl.people[fl.number_of_people] = &p1;
 				fl.number_of_people++;
-				printf("Created a person in %d. The person wants to go to %d.\n", fl.floor, p1.desired_floor);
 			}
+
+			int elevator_current_floor;
+			MPI_Recv(&elevator_current_floor, 1, MPI_INT, 0, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+
+			Person people[MAXNUMBER_OF_PEOPLE_WAITING_FOR_ELEVATOR];
+			int i = 0;
+			for (size_t i = 0; i < fl.number_of_people; i++) {
+				printf("%d\n", fl.people[i]->desired_floor);
+				if (fl.people[i]->desired_floor > elevator_current_floor)
+				{
+					people[i] = *fl.people[i];
+					i++;
+					fl.people[i] = NULL;
+				}
+			}
+
+			// For now let's just send number of people.
+			MPI_Send(&i, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
 		}
 
 	}
