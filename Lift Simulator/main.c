@@ -55,20 +55,40 @@ int main(int argc, char** argv)
 
 		printf(" ** Initializing Scheduler!\n");
 
+		// wait for the elevator to be ready
+		MPI_Recv( &current_floor, 1, MPI_INT, 1, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+
 		while (1) {
-			// wait for the elevator to reach a floor
-			int current_floor;
-			MPI_Recv( &current_floor, 1, MPI_INT, 1, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
 
-			printf("Elevator is in floor %d\n", current_floor);
+			// Waiting for a request of a floor
+			int desired_floor;
+			MPI_Recv(&desired_floor, 1, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG,
+			MPI_COMM_WORLD, &status);
 
-			// Destination of this message is current_floor + 2 because the first ranks are the Scheduler and Elevator
-			MPI_Send(&current_floor, 1, MPI_INT, current_floor + 2, 0, MPI_COMM_WORLD);
+			// Send to elevator a request to move
+			MPI_Send(&desired_floor, 1, MPI_INT, 1, 0, MPI_COMM_WORLD);
 
-			int i;
-			MPI_Recv(&i, 1, MPI_INT, current_floor + 2, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+			// Check for people to get in or get out in each floor which the elevator passes.
+			while(1)
+			{
+				int current_floor;
+				MPI_Recv( &current_floor, 1, MPI_INT, 1, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
 
-			MPI_Send(&i, 1, MPI_INT, 1, 0, MPI_COMM_WORLD);
+				// Destination of this message is current_floor + 2 because the first ranks are the Scheduler and Elevator
+				MPI_Send(&current_floor, 1, MPI_INT, current_floor + 2, 0, MPI_COMM_WORLD);
+
+				// Get number of people worth to come in
+				int i;
+				MPI_Recv(&i, 1, MPI_INT, current_floor + 2, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+
+				// Send info to the elevator
+				MPI_Send(&i, 1, MPI_INT, 1, 0, MPI_COMM_WORLD);
+
+				if (current_floor == desired_floor)
+				{
+					break;
+				}
+			}
 
 		}
 	}
@@ -81,15 +101,43 @@ int main(int argc, char** argv)
 		int elevator_change;
 		printf(" ** Initializing Elevator!\n");
 
-		while (1) {
-
+		while (1)
+		{
+			// IF IDLE, elevator send a message to scheduler.
 			MPI_Send(&lift.floor, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
-			// Receive from Scheduler if there is some people who wants to go in the same direction
-			int number_of_people_to_take;
-			MPI_Recv(&number_of_people_to_take, 1, MPI_INT, 0, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
 
-			printf("Elevator will take %d people.\n", number_of_people_to_take);
-			break;
+			// Receive from Scheduler the floor to go
+			MPI_Recv(&lift.desired_floor, 1, MPI_INT, 0, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+
+			// Calculate direction of change
+			if (lift.desired_floor > lift.floor)
+			{
+				lift.state = UP;
+				elevator_change = 1;
+			} else if (lift.desired_floor == lift.floor)
+			{
+				lift.state = IDLE;
+				elevator_change = 0;
+			}
+			else
+			{
+				lift.state = DOWN;
+				elevator_change = -1;
+			}
+
+			while(0)
+			{
+				sleep(TIME_BETWEEN_FLOORS);
+				lift.floor += elevator_change;
+
+				MPI_Send(&lift.floor, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
+
+				// Receive from Scheduler if there is some people who wants to go in the same direction
+				int number_of_people_to_take;
+				MPI_Recv(&number_of_people_to_take, 1, MPI_INT, 0, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+
+				printf("Elevator will take %d people.\n", number_of_people_to_take);
+			}
 
 		}
 	}
@@ -102,7 +150,6 @@ int main(int argc, char** argv)
 
 		printf(" ** Initializing floor %d\n", fl.floor);
 
-		// Create people
 		while(1)
 		{
 			if ((rand() % 100000) < 1 && fl.number_of_people < MAXNUMBER_OF_PEOPLE_WAITING_FOR_ELEVATOR)
