@@ -6,3 +6,5 @@ Each process calculate his own fragment of the sum - for example, for n = 100, p
 process computes elements 1 to 10, the second from 11 to 20, etc., at the end the partial sums are
 added and logarithm is subtracted. Note: n may not be divisible by p. The program can be made
 using any familiar technique .
+
+![Euler](http://i.imgur.com/PrvDANP.png)
