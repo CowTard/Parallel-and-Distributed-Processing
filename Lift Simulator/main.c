@@ -10,6 +10,7 @@
 #define MAX_NUMBER_OF_PEOPLE_WAITING 5
 
 int retrieve_direction_needed(int, int);
+int generate_floor(int, int);
 
 typedef struct {
 	int desired_floor;
@@ -114,10 +115,24 @@ int main(int argc, char** argv)
 		}
 	} else {
 		/*
-			- Create new people. []
+			- Create new people. [x]
 			- Send a request to the elevator. []
 			- Send people in if elevator stops in this floor. []
 		*/
+
+		// Create people
+		Person* people_waiting[MAX_NUMBER_OF_PEOPLE_WAITING] = {NULL};
+		int number_people_to_create = rand() % 2, number_people_waiting = 0;
+		int floor = rank - 1;
+
+		for (size_t i = 0; i < number_people_to_create; i++) {
+			Person p1;
+			p1.desired_floor = generate_floor(floor, number_of_processes);
+			number_people_waiting += 1;
+			people_waiting[number_people_waiting] = &p1;
+		}
+
+		printf("[Floor %d] %d person/people created.\n", floor, number_people_to_create);
 	}
 
     MPI_Finalize();
@@ -129,4 +144,14 @@ int retrieve_direction_needed(int current_floor, int desired_floor){
 	if (current_floor == desired_floor) return 0;
 	if (current_floor > desired_floor) return -1;
 	return 1;
+}
+
+int generate_floor(int current_floor, int number_of_floors) {
+
+	int generated_floor = rand() % number_of_floors;
+
+	if (generated_floor == current_floor)
+		return generate_floor(current_floor, number_of_floors);
+
+	return generated_floor;
 }
