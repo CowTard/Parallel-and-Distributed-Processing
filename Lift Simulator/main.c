@@ -15,7 +15,8 @@ typedef struct {
 } Person;
 
 /*
-	Tag 0: used for requests
+	Tag 0: Used for requests
+	Tag 1: Used for conversation in floors
 */
 int main(int argc, char** argv)
 {
@@ -51,7 +52,7 @@ int main(int argc, char** argv)
 			- Open doors in each floor a person gets out. [x]
 			- Open door when reach the desired floor. [x]
 			- Send a message to know how much people will get it in a floor. [x]
-			- Receive a message with how many people will get in. []
+			- Receive a message with how many people will get in. [x]
 			- Add people who got in. []
 		*/
 
@@ -79,6 +80,9 @@ int main(int argc, char** argv)
 
 					// Get people in
 					MPI_Send(&current_floor, 1, MPI_INT, current_floor + 1, 1,MPI_COMM_WORLD);
+
+					Person* people_to_get_in[MAX_NUMBER_OF_PEOPLE_WAITING];
+					MPI_Recv(&people_to_get_in, MAX_NUMBER_OF_PEOPLE_WAITING, mpi_person_type, current_floor + 1, 1, MPI_COMM_WORLD, &status);
 				}
 
 				sleep(TIME_BETWEEN_FLOORS);
