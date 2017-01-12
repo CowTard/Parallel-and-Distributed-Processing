@@ -60,8 +60,10 @@ int main(int argc, char** argv)
 
 		while(1) {
 
-			if(number_people_elevator == 0)
+			if(number_people_elevator == 0){
 				MPI_Recv(&desired_floor, 1, MPI_INT, MPI_ANY_SOURCE, 0, MPI_COMM_WORLD, &status);
+				printf("[Elevator] Received a request from %d.\n", desired_floor);
+			}
 			else
 				desired_floor = people_elevator[0]->desired_floor;
 
@@ -110,6 +112,7 @@ int main(int argc, char** argv)
 
 				sleep(TIME_BETWEEN_FLOORS);
 				current_floor += direction_change;
+				printf("[Elevator] On floor %d.\n", current_floor);
 
 			} while(current_floor != desired_floor);
 		}
@@ -119,20 +122,29 @@ int main(int argc, char** argv)
 			- Send a request to the elevator. []
 			- Send people in if elevator stops in this floor. []
 		*/
+		MPI_Request req;
 
-		// Create people
-		Person* people_waiting[MAX_NUMBER_OF_PEOPLE_WAITING] = {NULL};
-		int number_people_to_create = rand() % 2, number_people_waiting = 0;
-		int floor = rank - 1;
+		while (1) {
+			// Create people
+			Person* people_waiting[MAX_NUMBER_OF_PEOPLE_WAITING] = {NULL};
+			int number_people_to_create = rand() % 2, number_people_waiting = 0;
+			int floor = rank - 1;
 
-		for (size_t i = 0; i < number_people_to_create; i++) {
-			Person p1;
-			p1.desired_floor = generate_floor(floor, number_of_processes);
-			number_people_waiting += 1;
-			people_waiting[number_people_waiting] = &p1;
+			for (size_t i = 0; i < number_people_to_create; i++) {
+				Person p1;
+				p1.desired_floor = generate_floor(floor, number_of_processes);
+				number_people_waiting += 1;
+				people_waiting[number_people_waiting] = &p1;
+			}
+			printf("[Floor %d] %d person/people created.\n", floor, number_people_to_create);
+
+			if (number_people_waiting > 0)
+				MPI_Isend(&floor, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, &req);
+
+			int elevator_current_floor;
+			MPI_Recv(&elevator_current_floor, 1, MPI_INT, 0, 1, MPI_COMM_WORLD, &status);
 		}
 
-		printf("[Floor %d] %d person/people created.\n", floor, number_people_to_create);
 	}
 
     MPI_Finalize();
