@@ -40,6 +40,9 @@ int main(int argc, char** argv)
 			- Change floors after a requets. [x]
 			- Open doors in each floor a person gets out. [x]
 			- Open door when reach the desired floor. [x]
+			- Send a message to know how much people will get it in a floor. [x]
+			- Receive a message with how many people will get in. []
+			- Add people who got in. []
 		*/
 
 		while(1) {
@@ -63,6 +66,9 @@ int main(int argc, char** argv)
 				// Open doors
 				if (current_floor == desired_floor || number_of_people_leaving_in_this_floor > 0){
 					printf("[Elevator] Just left %d on this floor.\n", number_people_elevator);
+
+					// Get people in
+					MPI_Send(&current_floor, 1, MPI_INT, current_floor + 1, 1,MPI_COMM_WORLD);
 				}
 
 				sleep(TIME_BETWEEN_FLOORS);
