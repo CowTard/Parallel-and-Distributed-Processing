@@ -29,6 +29,16 @@ int main(int argc, char** argv)
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &number_of_processes);
 
+	// Creation of datatype
+    int blocklengths[1] = {1};
+    MPI_Datatype types[1] = {MPI_INT};
+    MPI_Datatype mpi_person_type;
+    MPI_Aint offsets[1];
+    offsets[0] = offsetof(Person, desired_floor);
+
+    MPI_Type_create_struct(1, blocklengths, offsets, types, &mpi_person_type);
+    MPI_Type_commit(&mpi_person_type);
+
     if (rank == 0) {
 
 		Person* people_elevator[MAX_NUMBER_OF_PEOPLE_IN_ELEVATOR];
