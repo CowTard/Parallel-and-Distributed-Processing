@@ -53,7 +53,7 @@ int main(int argc, char** argv)
 			- Open door when reach the desired floor. [x]
 			- Send a message to know how much people will get it in a floor. [x]
 			- Receive a message with how many people will get in. [x]
-			- Add people who got in. []
+			- Add people who got in. [x]
 		*/
 
 		while(1) {
@@ -83,6 +83,16 @@ int main(int argc, char** argv)
 
 					Person* people_to_get_in[MAX_NUMBER_OF_PEOPLE_WAITING];
 					MPI_Recv(&people_to_get_in, MAX_NUMBER_OF_PEOPLE_WAITING, mpi_person_type, current_floor + 1, 1, MPI_COMM_WORLD, &status);
+
+					// Add the people to elevator people
+					for (size_t i = 0; i < MAX_NUMBER_OF_PEOPLE_WAITING; i++) {
+						if (people_to_get_in[i] != NULL) {
+							people_elevator[number_people_elevator] = people_to_get_in[i];
+							number_people_elevator += 1;
+						} else {
+							break;
+						}
+					}
 				}
 
 				sleep(TIME_BETWEEN_FLOORS);
