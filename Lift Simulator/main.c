@@ -38,21 +38,38 @@ int main(int argc, char** argv)
 		/*
 			- Wait for a request from a floor. [x]
 			- Change floors after a requets. [x]
-			- Open doors in each floor a person gets out. []
-			- Open door when reach the desired floor. []
+			- Open doors in each floor a person gets out. [x]
+			- Open door when reach the desired floor. [x]
 		*/
 
-		MPI_Recv(&desired_floor, 1, MPI_INT, MPI_ANY_SOURCE, 0, MPI_COMM_WORLD, &status);
+		while(1) {
 
-		do {
+			MPI_Recv(&desired_floor, 1, MPI_INT, MPI_ANY_SOURCE, 0, MPI_COMM_WORLD, &status);
 
-			int direction_change = retrieve_direction_needed(current_floor, desired_floor);
+			do {
 
-			sleep(TIME_BETWEEN_FLOORS);
-			current_floor += direction_change;
+				int direction_change = retrieve_direction_needed(current_floor, desired_floor);
+				int number_of_people_leaving_in_this_floor = 0;
 
-		} while(current_floor != desired_floor);
+				for (size_t i = 0; i < number_people_elevator; i++) {
+					int person_direction = retrieve_direction_needed(current_floor, people[i]->desired_floor);
+					if (person_direction == direction_change){
+						number_of_people_leaving_in_this_floor += 1;
+						people[i] = NULL;
+					}
+				}
+				number_people_elevator -= number_of_people_leaving_in_this_floor;
 
+				// Open doors
+				if (current_floor == desired_floor || number_of_people_leaving_in_this_floor > 0){
+					printf("[Elevator] Just left %d on this floor.\n", number_people_elevator);
+				}
+
+				sleep(TIME_BETWEEN_FLOORS);
+				current_floor += direction_change;
+
+			} while(current_floor != desired_floor);
+		}
 	} else {
 		/*
 			- Create new people. []
