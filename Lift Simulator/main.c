@@ -59,7 +59,10 @@ int main(int argc, char** argv)
 
 		while(1) {
 
-			MPI_Recv(&desired_floor, 1, MPI_INT, MPI_ANY_SOURCE, 0, MPI_COMM_WORLD, &status);
+			if(number_people_elevator == 0)
+				MPI_Recv(&desired_floor, 1, MPI_INT, MPI_ANY_SOURCE, 0, MPI_COMM_WORLD, &status);
+			else
+				desired_floor = people_elevator[0]->desired_floor;
 
 			do {
 
