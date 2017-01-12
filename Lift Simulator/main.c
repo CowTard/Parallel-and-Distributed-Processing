@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <time.h>
+#include <string.h>
 #include "mpi.h"
 
 #define TIME_BETWEEN_FLOORS 1
@@ -42,7 +43,7 @@ int main(int argc, char** argv)
 
     if (rank == 0) {
 
-		Person* people_elevator[MAX_NUMBER_OF_PEOPLE_IN_ELEVATOR];
+		Person* people_elevator[MAX_NUMBER_OF_PEOPLE_IN_ELEVATOR] = {NULL};
 		int number_people_elevator = 0;
 		int current_floor = 0, desired_floor = 0;
 
@@ -65,14 +66,22 @@ int main(int argc, char** argv)
 				int direction_change = retrieve_direction_needed(current_floor, desired_floor);
 				int number_of_people_leaving_in_this_floor = 0;
 
+				Person* new_arr[MAX_NUMBER_OF_PEOPLE_IN_ELEVATOR] = {NULL};
+				int number_of_new_aloc = 0;
+
 				for (size_t i = 0; i < number_people_elevator; i++) {
 					int person_direction = retrieve_direction_needed(current_floor, people_elevator[i]->desired_floor);
 					if (person_direction == direction_change){
 						number_of_people_leaving_in_this_floor += 1;
 						people_elevator[i] = NULL;
+					} else {
+						new_arr[number_of_new_aloc] = people_elevator[i];
+						number_of_new_aloc += 1;
 					}
 				}
-				number_people_elevator -= number_of_people_leaving_in_this_floor;
+
+				memcpy(people_elevator, new_arr, sizeof(people_elevator));
+				number_people_elevator -= number_of_new_aloc;
 
 				// Open doors
 				if (current_floor == desired_floor || number_of_people_leaving_in_this_floor > 0){
@@ -111,6 +120,7 @@ int main(int argc, char** argv)
     MPI_Finalize();
     return 0;
 }
+
 
 int retrieve_direction_needed(int current_floor, int desired_floor){
 	if (current_floor == desired_floor) return 0;
