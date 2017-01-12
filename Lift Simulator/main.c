@@ -52,10 +52,10 @@ int main(int argc, char** argv)
 				int number_of_people_leaving_in_this_floor = 0;
 
 				for (size_t i = 0; i < number_people_elevator; i++) {
-					int person_direction = retrieve_direction_needed(current_floor, people[i]->desired_floor);
+					int person_direction = retrieve_direction_needed(current_floor, people_elevator[i]->desired_floor);
 					if (person_direction == direction_change){
 						number_of_people_leaving_in_this_floor += 1;
-						people[i] = NULL;
+						people_elevator[i] = NULL;
 					}
 				}
 				number_people_elevator -= number_of_people_leaving_in_this_floor;
