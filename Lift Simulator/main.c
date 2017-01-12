@@ -8,6 +8,8 @@
 #define MAX_NUMBER_OF_PEOPLE_IN_ELEVATOR 10
 #define MAX_NUMBER_OF_PEOPLE_WAITING 5
 
+int retrieve_direction_needed(int, int);
+
 typedef struct {
 	int desired_floor;
 } Person;
@@ -35,12 +37,22 @@ int main(int argc, char** argv)
 
 		/*
 			- Wait for a request from a floor. [x]
-			- Change floors after a requets. []
+			- Change floors after a requets. [x]
 			- Open doors in each floor a person gets out. []
 			- Open door when reach the desired floor. []
 		*/
 
 		MPI_Recv(&desired_floor, 1, MPI_INT, MPI_ANY_SOURCE, 0, MPI_COMM_WORLD, &status);
+
+		do {
+
+			int direction_change = retrieve_direction_needed(current_floor, desired_floor);
+
+			sleep(TIME_BETWEEN_FLOORS);
+			current_floor += direction_change;
+
+		} while(current_floor != desired_floor);
+
 	} else {
 		/*
 			- Create new people. []
@@ -51,4 +63,10 @@ int main(int argc, char** argv)
 
     MPI_Finalize();
     return 0;
+}
+
+int retrieve_direction_needed(int current_floor, int desired_floor){
+	if (current_floor == desired_floor) return 0;
+	if (current_floor > desired_floor) return -1;
+	return 1;
 }
