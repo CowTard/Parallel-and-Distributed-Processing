@@ -12,10 +12,6 @@
 int retrieve_direction_needed(int, int);
 int generate_floor(int, int);
 
-typedef struct {
-	int desired_floor;
-} Person;
-
 /*
 	Tag 0: Used for requests
 	Tag 1: Used for conversation in floors
@@ -50,6 +46,7 @@ int main(int argc, char** argv)
 		*/
 
 		while(1) {
+
 			if(number_people_elevator == 0){
 				MPI_Recv(&desired_floor, 1, MPI_INT, MPI_ANY_SOURCE, 0, MPI_COMM_WORLD, &status);
 				printf("[Elevator] Received a request from %d.\n", desired_floor);
@@ -58,14 +55,16 @@ int main(int argc, char** argv)
 				for (size_t i = 0; i < number_people_elevator; i++) {
 					if (people_elevator[i] != -1){
 						desired_floor = people_elevator[i];
+						printf("[Elevator] People inside. Going to floor %d.\n", desired_floor);
+						break;
 					}
 				}
 			}
 
-
 			int direction_change = -1;
 
 			while(direction_change != 0){
+
 				direction_change = retrieve_direction_needed(current_floor, desired_floor);
 				int number_of_people_leaving_in_this_floor = 0;
 
@@ -79,7 +78,7 @@ int main(int argc, char** argv)
 
 						int person_direction = retrieve_direction_needed(current_floor, people_elevator[i]);
 
-						if (person_direction == direction_change){
+						if (person_direction == 0){
 							number_of_people_leaving_in_this_floor += 1;
 							people_elevator[i] = -1;
 						} else {
@@ -90,11 +89,11 @@ int main(int argc, char** argv)
 				}
 
 				memcpy(people_elevator, new_arr, sizeof(people_elevator));
-				number_people_elevator -= number_of_new_aloc;
+				number_people_elevator -= number_of_people_leaving_in_this_floor;
 
 				// Open doors
 				if (current_floor == desired_floor || number_of_people_leaving_in_this_floor > 0){
-					printf("[Elevator] Just left %d on floor %d.\n", number_people_elevator, current_floor);
+					printf("[Elevator] Opened doors on floor %d.\n", current_floor);
 
 					// Get people in
 					MPI_Send(&current_floor, 1, MPI_INT, current_floor + 1, desired_floor, MPI_COMM_WORLD);
@@ -125,13 +124,13 @@ int main(int argc, char** argv)
 			- Send people in if elevator stops in this floor. []
 		*/
 		MPI_Request req;
+		int people_waiting[MAX_NUMBER_OF_PEOPLE_WAITING];
+		int number_people_waiting = 0, floor = rank - 1;
+		memset (people_waiting, -1, sizeof(people_waiting));
 
 		while (1) {
 			// Create people
-			int people_waiting[MAX_NUMBER_OF_PEOPLE_WAITING];
-			memset (people_waiting, -1, sizeof(people_waiting));
-			int number_people_to_create = rand() % 3, number_people_waiting = 0;
-			int floor = rank - 1;
+			int number_people_to_create = rand() % 3;
 
 			for (size_t i = 0; i < number_people_to_create; i++) {
 				people_waiting[number_people_waiting] = generate_floor(floor, number_of_processes - 1);
